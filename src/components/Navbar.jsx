@@ -1,74 +1,99 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
-import { FaSun, FaMoon } from "react-icons/fa";
+import React from "react";
+import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthProvider.jsx"; 
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase.config.js";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const [isDark, setIsDark] = useState(false);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => logout())
+      .catch((err) => console.error(err));
   };
 
-  return (
-    <div className="px-4 md:px-10 mt-4 mb-6 sticky top-0 z-50">
-      <div className="bg-white/30 dark:bg-gray-900/30 backdrop-blur-md rounded-2xl shadow-2xl py-6 px-6 flex justify-between items-center">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="text-2xl font-bold text-sky-700 dark:text-white hover:text-sky-900 transition"
+  const navLinks = (
+    <>
+      <NavLink
+        to="/"
+        className={({ isActive }) =>
+          isActive ? "text-blue-600 font-semibold" : "hover:text-blue-500"
+        }
+      >
+        Home
+      </NavLink>
+
+      <NavLink
+        to="/services"
+        className={({ isActive }) =>
+          isActive ? "text-blue-600 font-semibold" : "hover:text-blue-500"
+        }
+      >
+        Services
+      </NavLink>
+
+      {user && (
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            isActive ? "text-blue-600 font-semibold" : "hover:text-blue-500"
+          }
         >
-          FoodTracker
-        </Link>
+          My Profile
+        </NavLink>
+      )}
+    </>
+  );
 
-        {/* Desktop Menu */}
-        <ul className="hidden lg:flex gap-6 font-medium text-sky-700 dark:text-white">
-          <li><Link className="hover:text-sky-600" to="/">Home</Link></li>
-          <li><Link className="hover:text-sky-600" to="/fridge">Fridge</Link></li>
-          {user && <li><Link className="hover:text-sky-600" to="/add-food">Add Food</Link></li>}
-          {user && <li><Link className="hover:text-sky-600" to="/my-items">My Items</Link></li>}
-        </ul>
+  return (
+    <div className="navbar bg-base-200 px-5 shadow-sm">
+      <div className="navbar-start">
+        <a className="text-xl font-bold text-blue-600">My App</a>
+      </div>
 
-        {/* Right Section */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={toggleTheme}
-            className="btn btn-sm rounded-full bg-white dark:bg-slate-600"
-          >
-            {isDark ? <FaMoon className="text-lg" /> : <FaSun className="text-lg" />}
-          </button>
+      <div className="navbar-center hidden lg:flex">
+        <div className="flex gap-6 text-lg">{navLinks}</div>
+      </div>
 
-          {!user && (
-            <>
-              <Link
-                to="/login"
-                className="btn btn-sm border-sky-300 dark:border-white text-sky-700 dark:text-white hover:bg-sky-200 dark:hover:bg-slate-600 rounded-xl"
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="btn btn-sm border-sky-300 dark:border-white text-sky-700 dark:text-white hover:bg-sky-200 dark:hover:bg-slate-600 rounded-xl"
-              >
-                Register
-              </Link>
-            </>
-          )}
+      <div className="navbar-end">
 
-          {user && (
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-sky-700 dark:text-white">{user.name || user.email}</span>
-              <button
-                onClick={logout}
-                className="btn btn-sm bg-red-500 text-white hover:bg-red-600 rounded-xl"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
+        {/* যদি user লগ-ইন থাকে */}
+        {user ? (
+          <div className="flex items-center gap-3">
+
+            {/* User Photo */}
+            {user.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt="profile"
+                className="w-9 h-9 rounded-full border"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-blue-300 flex items-center justify-center text-white font-semibold">
+                {user.email[0].toUpperCase()}
+              </div>
+            )}
+
+            {/* User Name / Email */}
+            <span className="text-gray-700 font-medium hidden sm:block">
+              {user.displayName || user.email}
+            </span>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="btn btn-sm bg-red-500 text-white hover:bg-red-600"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          /* লগ-ইন না থাকলে */
+          <Link to="/login" className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600">
+            Login
+          </Link>
+        )}
       </div>
     </div>
   );

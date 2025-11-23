@@ -7,6 +7,7 @@ import MyItems from "../pages/MyItems";
 import FoodDetails from "../pages/FoodDetails";
 import NotFound from "../pages/NotFound";
 import PrivateRoute from "./PrivateRoute";
+import Profile from "../pages/Profile";
 
 const allRoutes = [
   {
@@ -40,7 +41,12 @@ const allRoutes = [
   {
     path: "*",
     element: <NotFound />
-  }
+  },
+  
+  { path: "/profile",
+    element: <Profile /> 
+  },
+  
 ];
 
 export default allRoutes;

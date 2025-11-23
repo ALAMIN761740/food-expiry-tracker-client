@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { auth } from "../../firebase.config.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -6,26 +8,27 @@ export const useAuth = () => useContext(AuthContext);
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Track Firebase user login/logout state
   useEffect(() => {
-    
-    const savedUser = JSON.parse(localStorage.getItem("user"));
-    if (savedUser) setUser(savedUser);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
-
-  const logout = () => {
+  // Logout function
+  const logout = async () => {
+    await signOut(auth);
     setUser(null);
-    localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, setUser }}>
-      {children}
+    <AuthContext.Provider value={{ user, setUser, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
