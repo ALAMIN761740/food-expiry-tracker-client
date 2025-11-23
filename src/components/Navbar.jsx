@@ -1,43 +1,74 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
+import { FaSun, FaMoon } from "react-icons/fa";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const [isDark, setIsDark] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    document.documentElement.classList.toggle("dark");
+  };
 
   return (
-    <div className="navbar bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg px-6">
-      {/* Left */}
-      <div className="navbar-start">
-        <Link to="/" className="btn btn-ghost normal-case text-xl font-bold text-white">
+    <div className="px-4 md:px-10 mt-4 mb-6 sticky top-0 z-50">
+      <div className="bg-white/30 dark:bg-gray-900/30 backdrop-blur-md rounded-2xl shadow-2xl py-6 px-6 flex justify-between items-center">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="text-2xl font-bold text-sky-700 dark:text-white hover:text-sky-900 transition"
+        >
           FoodTracker
         </Link>
-      </div>
 
-      {/* Center */}
-      <div className="navbar-center hidden md:flex">
-        <ul className="menu menu-horizontal px-1 gap-3">
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/fridge">Fridge</Link></li>
-          {user && <li><Link to="/add-food">Add Food</Link></li>}
-          {user && <li><Link to="/my-items">My Items</Link></li>}
+        {/* Desktop Menu */}
+        <ul className="hidden lg:flex gap-6 font-medium text-sky-700 dark:text-white">
+          <li><Link className="hover:text-sky-600" to="/">Home</Link></li>
+          <li><Link className="hover:text-sky-600" to="/fridge">Fridge</Link></li>
+          {user && <li><Link className="hover:text-sky-600" to="/add-food">Add Food</Link></li>}
+          {user && <li><Link className="hover:text-sky-600" to="/my-items">My Items</Link></li>}
         </ul>
-      </div>
 
-      {/* Right */}
-      <div className="navbar-end">
-        {!user && (
-          <>
-            <Link to="/login" className="btn btn-outline btn-sm mr-2">Login</Link>
-            <Link to="/register" className="btn btn-outline btn-sm">Register</Link>
-          </>
-        )}
-        {user && (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{user.name || user.email}</span>
-            <button onClick={logout} className="btn btn-sm btn-error">Logout</button>
-          </div>
-        )}
+        {/* Right Section */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            className="btn btn-sm rounded-full bg-white dark:bg-slate-600"
+          >
+            {isDark ? <FaMoon className="text-lg" /> : <FaSun className="text-lg" />}
+          </button>
+
+          {!user && (
+            <>
+              <Link
+                to="/login"
+                className="btn btn-sm border-sky-300 dark:border-white text-sky-700 dark:text-white hover:bg-sky-200 dark:hover:bg-slate-600 rounded-xl"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="btn btn-sm border-sky-300 dark:border-white text-sky-700 dark:text-white hover:bg-sky-200 dark:hover:bg-slate-600 rounded-xl"
+              >
+                Register
+              </Link>
+            </>
+          )}
+
+          {user && (
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-sky-700 dark:text-white">{user.name || user.email}</span>
+              <button
+                onClick={logout}
+                className="btn btn-sm bg-red-500 text-white hover:bg-red-600 rounded-xl"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
