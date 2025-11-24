@@ -1,61 +1,50 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { doc, getDoc, collection, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db, auth } from "../../firebase.config.js";
-import toast from "react-hot-toast";
+import axios from "axios";
+import { getAuth } from "firebase/auth";
+import { toast } from "react-hot-toast";
 
-const FoodDetails = () => {
+export default function FoodDetails() {
   const { id } = useParams();
+  const auth = getAuth();
   const [food, setFood] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [note, setNote] = useState("");
   const [notes, setNotes] = useState([]);
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
   const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
     const fetchFood = async () => {
       try {
-        const docRef = doc(db, "foods", id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setFood(data);
-          setIsOwner(auth.currentUser?.email === data.userEmail);
+        const res = await axios.get(`http://localhost:5000/foods/${id}`);
+        setFood(res.data);
+        setIsOwner(auth.currentUser?.email === res.data.userEmail);
 
-          // Fetch notes
-          const notesQuery = query(
-            collection(db, "notes"),
-            where("foodId", "==", id),
-            orderBy("createdAt", "desc")
-          );
-          const notesSnap = await getDocs(notesQuery);
-          const notesList = notesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setNotes(notesList);
+        const notesRes = await axios.get(`http://localhost:5000/notes?foodId=${id}`);
+        setNotes(notesRes.data);
 
-          setLoading(false);
+        setLoading(false);
 
-          // Countdown
-          const updateCountdown = () => {
-            const now = new Date();
-            const exp = new Date(data.expiryDate);
-            const diff = exp - now;
-            if (diff <= 0) setCountdown("Expired");
-            else {
-              const days = Math.floor(diff / (1000*60*60*24));
-              const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
-              const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
-              const seconds = Math.floor((diff % (1000*60)) / 1000);
-              setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-            }
-          };
-          updateCountdown();
-          const timer = setInterval(updateCountdown, 1000);
-          return () => clearInterval(timer);
-        }
+        const updateCountdown = () => {
+          const now = new Date();
+          const exp = new Date(res.data.expiryDate);
+          const diff = exp - now;
+          if (diff <= 0) setCountdown("Expired");
+          else {
+            const days = Math.floor(diff / (1000*60*60*24));
+            const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+            const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
+            const seconds = Math.floor((diff % (1000*60)) / 1000);
+            setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+          }
+        };
+        updateCountdown();
+        const timer = setInterval(updateCountdown, 1000);
+        return () => clearInterval(timer);
       } catch (err) {
         toast.error("Failed to fetch food");
-        console.log(err);
+        setLoading(false);
       }
     };
     fetchFood();
@@ -64,27 +53,24 @@ const FoodDetails = () => {
   const handleAddNote = async () => {
     if (!note) return toast.error("Note cannot be empty");
     try {
-      await addDoc(collection(db, "notes"), {
+      const res = await axios.post("http://localhost:5000/notes", {
         foodId: id,
         userEmail: auth.currentUser.email,
         text: note,
-        createdAt: new Date()
       });
-      setNotes([{ foodId: id, userEmail: auth.currentUser.email, text: note, createdAt: new Date() }, ...notes]);
+      setNotes([res.data, ...notes]);
       setNote("");
       toast.success("Note added");
-    } catch (err) {
+    } catch {
       toast.error("Failed to add note");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <span className="loading loading-ring loading-xl"></span>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-screen">
+      <span className="loading loading-ring loading-xl"></span>
+    </div>
+  );
 
   return (
     <div className="min-h-screen p-6 bg-green-50">
@@ -105,33 +91,29 @@ const FoodDetails = () => {
               {notes.map((n, idx) => (
                 <div key={idx} className="p-3 bg-green-100 rounded-lg">
                   <p>{n.text}</p>
-                  <p className="text-xs text-gray-500">By: {n.userEmail} on {n.createdAt.toDate ? n.createdAt.toDate().toLocaleString() : new Date(n.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">By: {n.userEmail}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="mb-4">
-            <textarea
-              placeholder="Add a note..."
-              className="textarea textarea-bordered w-full"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              disabled={!isOwner}
-            />
-            <button
-              className={`btn mt-2 w-full ${isOwner ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-400 cursor-not-allowed"}`}
-              onClick={handleAddNote}
-              disabled={!isOwner}
-            >
-              Add Note
-            </button>
-            {!isOwner && <p className="text-sm text-red-600 mt-1">You can only add notes to your own items.</p>}
-          </div>
+          <textarea
+            placeholder="Add a note..."
+            className="textarea textarea-bordered w-full mb-2"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            disabled={!isOwner}
+          />
+          <button
+            className={`btn w-full ${isOwner ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-400 cursor-not-allowed"}`}
+            onClick={handleAddNote}
+            disabled={!isOwner}
+          >
+            Add Note
+          </button>
+          {!isOwner && <p className="text-sm text-red-600 mt-1">You can only add notes to your own items.</p>}
         </div>
       </div>
     </div>
   );
-};
-
-export default FoodDetails;
+}

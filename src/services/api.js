@@ -1,8 +1,13 @@
 import axios from "axios";
 
-const api = axios.create({
-  baseURL: "http://localhost:5000",
-  withCredentials: true, 
-});
+const BASE_URL = "http://localhost:5000"; 
 
-export default api;
+export const getFoods = async () => {
+  try {
+    const res = await axios.get(`${BASE_URL}/foods`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching foods:", error);
+    return [];
+  }
+};
